@@ -17,6 +17,7 @@
         height: 100%;
         overflow: hidden;
         font-family: Arial, sans-serif;
+        background: transparent;
       }
 
       #status {
@@ -31,14 +32,24 @@
         z-index: 999;
       }
 
-      /* Make A-Frame canvas full screen */
-      a-scene, .a-canvas, .arjs-video, video {
+      /* Full screen camera view */
+      .a-canvas {
+        width: 100vw !important;
+        height: 100vh !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+      }
+
+      .arjs-video {
         width: 100% !important;
         height: 100% !important;
         object-fit: cover !important;
-        position: absolute !important;
-        top: 0;
-        left: 0;
+      }
+
+      /* Remove white background */
+      a-scene {
+        background: transparent;
       }
     </style>
   </head>
@@ -46,24 +57,13 @@
   <body>
     <div id="status">📷 Point camera at marker to play video</div>
 
-    <!-- Hidden video tag for fallback or preload -->
-    <video
-      id="video"
-      preload="auto"
-      playsinline
-      webkit-playsinline
-      style="display: none;"
-      loop
-    >
-      <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
-    </video>
-
     <!-- AR Scene -->
     <a-scene
       embedded
       vr-mode-ui="enabled: false"
-      renderer="logarithmicDepthBuffer: true;"
+      renderer="logarithmicDepthBuffer: true; alpha: true;"
       arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.8;"
+      background="transparent"
     >
 
       <!-- Video asset -->
@@ -76,6 +76,7 @@
           playsinline
           webkit-playsinline
           preload="auto"
+          muted
         ></video>
       </a-assets>
 
@@ -93,7 +94,7 @@
           rotation="-90 0 0"
           width="6"
           height="3.375"
-          material="src: #vid; shader: flat; side: double;"
+          material="src: #vid; shader: flat; side: double; transparent: true;"
         ></a-plane>
 
         <!-- Optional border -->
@@ -115,36 +116,51 @@
       const marker = document.querySelector('#marker');
       const video = document.querySelector('#vid');
       const status = document.querySelector('#status');
-      let isPlaying = false;
+      let audioEnabled = false;
 
       // Preload video
       video.load();
 
+      // Ensure looping attribute is set
+      video.loop = true;
+
       marker.addEventListener('markerFound', () => {
-        status.textContent = '✓ Marker detected! Tap screen to play with audio';
+        status.textContent = audioEnabled ? '✓ Playing with audio' : '✓ Marker detected! Tap for audio';
         status.style.background = 'rgba(0,200,0,0.8)';
+        
+        // Start playing video (muted initially for autoplay)
+        video.play().catch(err => {
+          console.error('Autoplay failed:', err);
+        });
       });
 
       marker.addEventListener('markerLost', () => {
         status.textContent = '✗ Marker lost - point at marker';
         status.style.background = 'rgba(200,0,0,0.8)';
         video.pause();
-        isPlaying = false;
       });
 
-      // Tap to play with audio
+      // Tap to enable audio
       document.body.addEventListener('click', () => {
-        video.muted = false;
-        video.play()
-          .then(() => {
-            isPlaying = true;
-            status.textContent = '🔊 Audio enabled! Video playing';
-          })
-          .catch(err => {
-            console.error('Playback error:', err);
-            status.textContent = '⚠️ Error: Tap again to retry';
-          });
-      }, { once: true });
+        if (!audioEnabled) {
+          video.muted = false;
+          video.play()
+            .then(() => {
+              audioEnabled = true;
+              status.textContent = '🔊 Audio enabled! Video playing';
+            })
+            .catch(err => {
+              console.error('Audio enable error:', err);
+              status.textContent = '⚠️ Error: Tap again to retry';
+            });
+        }
+      });
+
+      // Handle video end (backup loop mechanism)
+      video.addEventListener('ended', () => {
+        video.currentTime = 0;
+        video.play();
+      });
     </script>
   </body>
 </html>
