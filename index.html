@@ -31,6 +31,7 @@
       crossorigin="anonymous" 
       playsinline 
       webkit-playsinline
+      muted
       preload="auto"
       style="display: none;">
       <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
@@ -44,7 +45,7 @@
       
       <a-assets>
         <video id="vid" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
-               loop crossorigin="anonymous" playsinline webkit-playsinline preload="auto"></video>
+               loop crossorigin="anonymous" playsinline webkit-playsinline muted preload="auto"></video>
       </a-assets>
       
       <a-marker 
@@ -86,8 +87,18 @@
       video.load();
 
       marker.addEventListener('markerFound', function() {
-        status.textContent = '✓ Marker detected! Tap screen to play with audio';
+        status.textContent = '✓ Marker detected! Playing video...';
         status.style.background = 'rgba(0,200,0,0.8)';
+        
+        if (!isPlaying) {
+          video.play().then(() => {
+            isPlaying = true;
+            console.log('Video playing');
+          }).catch(err => {
+            console.error('Error playing video:', err);
+            status.textContent = 'Tap screen to enable video';
+          });
+        }
       });
 
       marker.addEventListener('markerLost', function() {
@@ -97,18 +108,12 @@
         isPlaying = false;
       });
 
-      // Tap screen to unmute and play
+      // Fallback: tap to play
       document.body.addEventListener('click', function() {
-        video.muted = false;
-        video.play().then(() => {
-          isPlaying = true;
-          status.textContent = '🔊 Audio enabled! Video playing';
-          console.log('Video playing with audio');
-        }).catch(err => {
-          console.error('Error playing video:', err);
-          status.textContent = 'Error: Tap again to retry';
-        });
-      }, { once: true });
+        if (video.paused) {
+          video.play().catch(err => console.error('Play error:', err));
+        }
+      });
     </script>
   </body>
 </html>
