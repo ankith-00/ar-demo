@@ -1,3 +1,4 @@
+VERSION - 01
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -10,17 +11,14 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
 
     <style>
-      * {
+      html, body {
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
-      }
-
-      html, body {
         width: 100%;
         height: 100%;
         overflow: hidden;
         font-family: Arial, sans-serif;
+        background: transparent;
       }
 
       #status {
@@ -32,19 +30,27 @@
         color: white;
         padding: 10px 20px;
         border-radius: 5px;
-        z-index: 9999;
-        pointer-events: none;
+        z-index: 999;
       }
 
-      /* Ensure camera feed is visible */
+      /* Full screen camera view */
       .a-canvas {
-        z-index: 1 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
       }
 
+      .arjs-video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+      }
+
+      /* Remove white background */
       a-scene {
-        width: 100%;
-        height: 100%;
-        display: block;
+        background: transparent;
       }
     </style>
   </head>
@@ -56,8 +62,9 @@
     <a-scene
       embedded
       vr-mode-ui="enabled: false"
-      renderer="logarithmicDepthBuffer: true; antialias: true; precision: medium;"
-      arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.8; trackingMethod: best; detectionMode: mono_and_matrix; matrixCodeType: 3x3; cameraParametersUrl: https://rawcdn.githack.com/AR-js-org/AR.js/3.4.5/data/data/camera_para.dat;"
+      renderer="logarithmicDepthBuffer: true; alpha: true;"
+      arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.8;"
+      background="transparent"
     >
 
       <!-- Video asset -->
@@ -74,35 +81,31 @@
         ></video>
       </a-assets>
 
-      <!-- Marker with smoother tracking -->
+      <!-- Marker -->
       <a-marker
         id="marker"
         type="pattern"
         url="https://rawcdn.githack.com/ankith-00/ar-demo/refs/heads/main/marker.patt"
         emitevents="true"
-        smooth="true"
-        smoothCount="10"
-        smoothTolerance="0.01"
-        smoothThreshold="5"
       >
         <!-- Large video plane with 16:9 aspect ratio -->
         <a-plane
           id="video-plane"
           position="0 0 0"
           rotation="-90 0 0"
-          width="4"
-          height="2.25"
-          material="src: #vid; shader: flat; side: double;"
+          width="6"
+          height="3.375"
+          material="src: #vid; shader: flat; side: double; transparent: true;"
         ></a-plane>
 
-        <!-- Optional border for better visibility -->
+        <!-- Optional border -->
         <a-box
-          position="0 -0.03 0"
+          position="0 -0.05 0"
           rotation="-90 0 0"
-          width="4.1"
-          height="2.35"
-          depth="0.03"
-          color="#000000"
+          width="6.1"
+          height="3.5"
+          depth="0.05"
+          color="#222"
         ></a-box>
       </a-marker>
 
@@ -115,41 +118,32 @@
       const video = document.querySelector('#vid');
       const status = document.querySelector('#status');
       let audioEnabled = false;
-      let markerVisible = false;
 
       // Preload video
       video.load();
+
+      // Ensure looping attribute is set
       video.loop = true;
 
-      // Wait for scene to load
-      const scene = document.querySelector('a-scene');
-      scene.addEventListener('loaded', () => {
-        console.log('AR scene loaded');
-        status.textContent = '📷 Camera ready - point at marker';
-      });
-
       marker.addEventListener('markerFound', () => {
-        markerVisible = true;
         status.textContent = audioEnabled ? '✓ Playing with audio' : '✓ Marker detected! Tap for audio';
         status.style.background = 'rgba(0,200,0,0.8)';
         
-        // Start playing video
+        // Start playing video (muted initially for autoplay)
         video.play().catch(err => {
           console.error('Autoplay failed:', err);
         });
       });
 
       marker.addEventListener('markerLost', () => {
-        markerVisible = false;
         status.textContent = '✗ Marker lost - point at marker';
         status.style.background = 'rgba(200,0,0,0.8)';
         video.pause();
-        video.currentTime = 0;
       });
 
       // Tap to enable audio
       document.body.addEventListener('click', () => {
-        if (!audioEnabled && markerVisible) {
+        if (!audioEnabled) {
           video.muted = false;
           video.play()
             .then(() => {
@@ -163,20 +157,17 @@
         }
       });
 
-      // Ensure video loops
+      // Handle video end (backup loop mechanism)
       video.addEventListener('ended', () => {
-        if (markerVisible) {
-          video.currentTime = 0;
-          video.play();
-        }
-      });
-
-      // Handle errors
-      video.addEventListener('error', (e) => {
-        console.error('Video error:', e);
-        status.textContent = '⚠️ Video loading error';
-        status.style.background = 'rgba(200,0,0,0.8)';
+        video.currentTime = 0;
+        video.play();
       });
     </script>
   </body>
 </html>
+
+
+
+
+
+VERSION - 02
