@@ -1,158 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>AR.js Responsive Video</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AR Video Marker</title>
 
-    <!-- A-Frame and AR.js -->
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
+  <!-- A-Frame + AR.js -->
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.min.js"></script>
 
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
 
-      html, body {
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
-      }
+    #status {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      z-index: 1000;
+      font-size: 14px;
+      pointer-events: none;
+    }
 
-      #status {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        z-index: 9999;
-        pointer-events: none;
-      }
+    /* Ensure camera fills screen and not zoomed */
+    a-scene, .a-canvas, .arjs-video {
+      width: 100% !important;
+      height: 100% !important;
+      position: absolute !important;
+      top: 0;
+      left: 0;
+      object-fit: cover !important;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="status">📷 Point your camera at the marker</div>
 
-      a-scene, .a-canvas, .arjs-video, video {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important;
-        position: absolute !important;
-        top: 0;
-        left: 0;
-        z-index: 1 !important;
-      }
-    </style>
-  </head>
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true;"
+    arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.8;"
+  >
+    <a-assets>
+      <video
+        id="vid"
+        src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        autoplay
+        loop
+        muted
+        playsinline
+        webkit-playsinline
+        crossorigin="anonymous"
+        preload="auto"
+      ></video>
+    </a-assets>
 
-  <body>
-    <div id="status">📷 Point camera at marker to play video</div>
-
-    <a-scene
-      embedded
-      vr-mode-ui="enabled: false"
-      renderer="logarithmicDepthBuffer: true; antialias: true;"
-      arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.8;"
+    <a-marker
+      id="marker"
+      type="pattern"
+      url="https://rawcdn.githack.com/ankith-00/ar-demo/refs/heads/main/marker.patt"
+      emitevents="true"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
     >
-      <a-assets>
-        <video
-          id="vid"
-          src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-          loop
-          crossorigin="anonymous"
-          playsinline
-          webkit-playsinline
-          preload="auto"
-          muted
-        ></video>
-      </a-assets>
+      <a-plane
+        id="video-plane"
+        position="0 0 0"
+        rotation="-90 0 0"
+        width="6"
+        height="3.375"
+        material="src: #vid; shader: flat; side: double;"
+      ></a-plane>
+    </a-marker>
 
-      <a-marker
-        id="marker"
-        type="pattern"
-        url="https://rawcdn.githack.com/ankith-00/ar-demo/refs/heads/main/marker.patt"
-        emitevents="true"
-        smooth="true"
-        smoothCount="10"
-        smoothTolerance="0.01"
-        smoothThreshold="5"
-      >
-        <a-plane
-          id="video-plane"
-          position="0 0 0"
-          rotation="-90 0 0"
-          width="6" height="3.375" <!-- 16:9 -->
-          material="src: #vid; shader: flat; side: double;"
-        ></a-plane>
+    <a-entity camera look-controls="enabled: false"></a-entity>
+  </a-scene>
 
-        <a-box
-          position="0 -0.03 0"
-          rotation="-90 0 0"
-          width="6.1"
-          height="3.5"
-          depth="0.03"
-          color="#000000"
-        ></a-box>
-      </a-marker>
+  <script>
+    const video = document.querySelector('#vid');
+    const marker = document.querySelector('#marker');
+    const status = document.getElementById('status');
+    let audioEnabled = false;
+    let markerVisible = false;
 
-      <a-entity camera look-controls="enabled: false"></a-entity>
-    </a-scene>
+    // Video ready
+    video.addEventListener('canplay', () => {
+      console.log('Video loaded and can play');
+    });
 
-    <script>
-      const marker = document.querySelector('#marker');
-      const video = document.querySelector('#vid');
-      const status = document.querySelector('#status');
-      let audioEnabled = false;
-      let markerVisible = false;
+    // Marker found
+    marker.addEventListener('markerFound', () => {
+      markerVisible = true;
+      status.textContent = audioEnabled ? '▶️ Playing with audio' : '✓ Marker found - tap to unmute';
+      status.style.background = 'rgba(0,200,0,0.8)';
+      video.play().catch((e) => {
+        console.warn('Play failed:', e);
+      });
+    });
 
-      video.load();
-      video.loop = true;
+    // Marker lost
+    marker.addEventListener('markerLost', () => {
+      markerVisible = false;
+      status.textContent = '✗ Marker lost - point camera again';
+      status.style.background = 'rgba(200,0,0,0.8)';
+      video.pause();
+      video.currentTime = 0;
+    });
 
-      marker.addEventListener('markerFound', () => {
-        markerVisible = true;
-        status.textContent = audioEnabled ? '✓ Playing with audio' : '✓ Marker detected! Tap for audio';
-        status.style.background = 'rgba(0,200,0,0.8)';
-        video.play().catch(err => {
-          console.error('Autoplay failed:', err);
+    // Tap to enable audio
+    document.body.addEventListener('click', () => {
+      if (!audioEnabled && markerVisible) {
+        video.muted = false;
+        video.play().then(() => {
+          audioEnabled = true;
+          status.textContent = '🔊 Audio enabled! Playing...';
+        }).catch(err => {
+          console.error('Error enabling audio:', err);
+          status.textContent = '⚠️ Tap again to enable audio';
         });
-      });
-
-      marker.addEventListener('markerLost', () => {
-        markerVisible = false;
-        status.textContent = '✗ Marker lost - point at marker';
-        status.style.background = 'rgba(200,0,0,0.8)';
-        video.pause();
-        video.currentTime = 0;
-      });
-
-      document.body.addEventListener('click', () => {
-        if (!audioEnabled && markerVisible) {
-          video.muted = false;
-          video.play().then(() => {
-            audioEnabled = true;
-            status.textContent = '🔊 Audio enabled! Video playing';
-          }).catch(err => {
-            console.error('Audio enable error:', err);
-            status.textContent = '⚠️ Error: Tap again to retry';
-          });
-        }
-      });
-
-      video.addEventListener('ended', () => {
-        if (markerVisible) {
-          video.currentTime = 0;
-          video.play();
-        }
-      });
-
-      video.addEventListener('error', (e) => {
-        console.error('Video error:', e);
-        status.textContent = '⚠️ Video loading error';
-        status.style.background = 'rgba(200,0,0,0.8)';
-      });
-    </script>
-  </body>
+      }
+    });
+  </script>
+</body>
 </html>
