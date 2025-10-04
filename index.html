@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
@@ -7,10 +8,8 @@
     <a-scene embedded arjs="patternRatio:0.80">
         <a-marker type="pattern" url="https://rawcdn.githack.com/ankith-00/ar-demo/refs/heads/main/marker.patt">
             <a-box position="0 0 0" rotation="0 45 0" color="#4CC3D9"></a-box>
-            <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
-            <a-sky color="#ECECEC"></a-sky>
-      </a-marker>
-      <a-entity camera></a-entity>
+        </a-marker>
+        <a-entity camera></a-entity>
     </a-scene>
   </body>
 </html>
