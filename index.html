@@ -1,13 +1,14 @@
+VERSION - 01
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>AR.js Camera Fix</title>
+    <title>AR.js Responsive Video</title>
 
-    <!-- A-Frame + AR.js -->
+    <!-- A-Frame and AR.js -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
 
     <style>
       html, body {
@@ -16,62 +17,57 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: black;
+        font-family: Arial, sans-serif;
+        background: transparent;
       }
 
       #status {
         position: fixed;
-        bottom: 15px;
+        bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0,0,0,0.7);
-        color: #fff;
-        padding: 10px 18px;
-        border-radius: 6px;
-        font-family: sans-serif;
-        z-index: 10;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 999;
+      }
+
+      /* Full screen camera view */
+      .a-canvas {
+        width: 100vw !important;
+        height: 100vh !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
       }
 
       .arjs-video {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
         width: 100% !important;
         height: 100% !important;
         object-fit: cover !important;
-        z-index: 0 !important;
       }
 
-      canvas.a-canvas {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        z-index: 1 !important;
-        pointer-events: none;
-      }
-
+      /* Remove white background */
       a-scene {
-        position: fixed !important;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: transparent !important;
+        background: transparent;
       }
     </style>
   </head>
 
   <body>
-    <div id="status">📷 Allow camera access to start AR</div>
+    <div id="status">📷 Point camera at marker to play video</div>
 
+    <!-- AR Scene -->
     <a-scene
       embedded
       vr-mode-ui="enabled: false"
-      renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true;"
-      arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: true;"
+      renderer="logarithmicDepthBuffer: true; alpha: true;"
+      arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.8;"
+      background="transparent"
     >
+
+      <!-- Video asset -->
       <a-assets>
         <video
           id="vid"
@@ -79,60 +75,92 @@
           loop
           crossorigin="anonymous"
           playsinline
+          webkit-playsinline
           preload="auto"
           muted
         ></video>
       </a-assets>
 
+      <!-- Marker -->
       <a-marker
         id="marker"
         type="pattern"
         url="https://rawcdn.githack.com/ankith-00/ar-demo/refs/heads/main/marker.patt"
         emitevents="true"
       >
+        <!-- Large video plane with 16:9 aspect ratio -->
         <a-plane
           id="video-plane"
           position="0 0 0"
           rotation="-90 0 0"
-          width="5"
-          height="2.8"
-          material="src: #vid; shader: flat;"
+          width="6"
+          height="3.375"
+          material="src: #vid; shader: flat; side: double; transparent: true;"
         ></a-plane>
+
+        <!-- Optional border -->
+        <a-box
+          position="0 -0.05 0"
+          rotation="-90 0 0"
+          width="6.1"
+          height="3.5"
+          depth="0.05"
+          color="#222"
+        ></a-box>
       </a-marker>
 
-      <a-entity camera></a-entity>
+      <a-entity camera look-controls="enabled: false"></a-entity>
     </a-scene>
 
+    <!-- Video playback control script -->
     <script>
       const marker = document.querySelector('#marker');
       const video = document.querySelector('#vid');
       const status = document.querySelector('#status');
       let audioEnabled = false;
 
+      // Preload video
       video.load();
 
+      // Ensure looping attribute is set
+      video.loop = true;
+
       marker.addEventListener('markerFound', () => {
-        status.textContent = audioEnabled
-          ? '🎥 Playing video with audio'
-          : '✅ Marker found (tap to enable sound)';
-        video.play().catch(() => {});
+        status.textContent = audioEnabled ? '✓ Playing with audio' : '✓ Marker detected! Tap for audio';
+        status.style.background = 'rgba(0,200,0,0.8)';
+        
+        // Start playing video (muted initially for autoplay)
+        video.play().catch(err => {
+          console.error('Autoplay failed:', err);
+        });
       });
 
       marker.addEventListener('markerLost', () => {
-        status.textContent = '❌ Marker lost - point camera at marker';
+        status.textContent = '✗ Marker lost - point at marker';
+        status.style.background = 'rgba(200,0,0,0.8)';
         video.pause();
       });
 
+      // Tap to enable audio
       document.body.addEventListener('click', () => {
         if (!audioEnabled) {
           video.muted = false;
           video.play()
             .then(() => {
               audioEnabled = true;
-              status.textContent = '🔊 Audio enabled';
+              status.textContent = '🔊 Audio enabled! Video playing';
             })
-            .catch(err => console.warn('Play error:', err));
+            .catch(err => {
+              console.error('Audio enable error:', err);
+              status.textContent = '⚠️ Error: Tap again to retry';
+            });
         }
+      });
+
+      // Handle video end (backup loop mechanism)
+      video.addEventListener('ended', () => {
+        video.currentTime = 0;
+        video.play();
       });
     </script>
   </body>
