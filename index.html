@@ -98,18 +98,9 @@ VERSION - 01
           material="src: #vid; shader: flat; side: double; transparent: true;"
         ></a-plane>
 
-        <!-- Optional border -->
-        <a-box
-          position="0 -0.05 0"
-          rotation="-90 0 0"
-          width="6.1"
-          height="3.5"
-          depth="0.05"
-          color="#222"
-        ></a-box>
       </a-marker>
 
-      <a-entity camera look-controls="enabled: false"></a-entity>
+      <a-entity camera look-controls="enabled: true"></a-entity>
     </a-scene>
 
     <!-- Video playback control script -->
@@ -127,7 +118,7 @@ VERSION - 01
 
       marker.addEventListener('markerFound', () => {
         status.textContent = audioEnabled ? '✓ Playing with audio' : '✓ Marker detected! Tap for audio';
-        status.style.background = 'rgba(0,200,0,0.8)';
+        // status.style.background = 'rgba(0,200,0,0.8)';
         
         // Start playing video (muted initially for autoplay)
         video.play().catch(err => {
