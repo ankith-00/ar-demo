@@ -10,13 +10,18 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
 
     <style>
-      html, body {
+      * {
         margin: 0;
         padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body {
         width: 100%;
         height: 100%;
         overflow: hidden;
         font-family: Arial, sans-serif;
+        position: fixed;
       }
 
       #status {
@@ -32,33 +37,38 @@
         font-size: 14px;
       }
 
-      /* Ensure canvas and video take full screen */
+      /* Force full screen AR scene */
+      a-scene {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* Canvas should fill entire screen */
       .a-canvas {
-        width: 100% !important;
-        height: 100% !important;
+        width: 100vw !important;
+        height: 100vh !important;
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
       }
 
-      /* Make sure video element is visible and covers screen */
-      video {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
+      /* Camera feed video should cover full screen */
+      .arjs-video, video[autoplay] {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        min-width: 100% !important;
+        min-height: 100% !important;
+        width: auto !important;
+        height: auto !important;
+        transform: translate(-50%, -50%) !important;
         object-fit: cover !important;
         z-index: -1 !important;
-      }
-
-      /* Remove any background from a-scene */
-      a-scene {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
       }
     </style>
   </head>
@@ -95,13 +105,13 @@
         url="https://rawcdn.githack.com/ankith-00/ar-demo/refs/heads/main/marker.patt"
         emitevents="true"
       >
-        <!-- Large video plane with 16:9 aspect ratio -->
+        <!-- Video plane with 16:9 aspect ratio (smaller size) -->
         <a-plane
           id="video-plane"
           position="0 0 0"
           rotation="-90 0 0"
-          width="6"
-          height="3.375"
+          width="2"
+          height="1.125"
           material="src: #vid; shader: flat; side: double; transparent: true;"
         ></a-plane>
 
@@ -109,8 +119,8 @@
         <a-box
           position="0 -0.05 0"
           rotation="-90 0 0"
-          width="6.1"
-          height="3.5"
+          width="2.1"
+          height="1.2"
           depth="0.05"
           color="#222"
         ></a-box>
@@ -129,19 +139,23 @@
       // Wait for AR.js to initialize
       window.addEventListener('load', () => {
         setTimeout(() => {
-          // Force camera feed to be visible
-          const arVideo = document.querySelector('video[autoplay]');
-          if (arVideo && arVideo !== video) {
-            arVideo.style.display = 'block';
-            arVideo.style.position = 'absolute';
-            arVideo.style.top = '0';
-            arVideo.style.left = '0';
-            arVideo.style.width = '100%';
-            arVideo.style.height = '100%';
-            arVideo.style.objectFit = 'cover';
-            arVideo.style.zIndex = '-1';
-          }
-        }, 1000);
+          // Force camera feed to be visible and full screen
+          const arVideos = document.querySelectorAll('video');
+          arVideos.forEach(v => {
+            if (v !== video && v.hasAttribute('autoplay')) {
+              v.style.position = 'fixed';
+              v.style.top = '50%';
+              v.style.left = '50%';
+              v.style.minWidth = '100%';
+              v.style.minHeight = '100%';
+              v.style.width = 'auto';
+              v.style.height = 'auto';
+              v.style.transform = 'translate(-50%, -50%)';
+              v.style.objectFit = 'cover';
+              v.style.zIndex = '-1';
+            }
+          });
+        }, 500);
       });
 
       // Preload video
